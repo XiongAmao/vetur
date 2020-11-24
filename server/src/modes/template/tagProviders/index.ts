@@ -31,7 +31,7 @@ export interface CompletionConfiguration {
   [provider: string]: boolean;
 }
 
-export function getTagProviderSettings(workspacePath: string | null | undefined) {
+export function getTagProviderSettings(projectPath: string | null | undefined, packagePath: string | undefined) {
   const settings: CompletionConfiguration = {
     '__vetur-workspace': true,
     html5: true,
@@ -47,16 +47,16 @@ export function getTagProviderSettings(workspacePath: string | null | undefined)
     nuxt: false,
     gridsome: false
   };
-  if (!workspacePath) {
+  if (!projectPath) {
     return settings;
   }
   try {
-    const packagePath = findConfigFile(workspacePath, 'package.json');
-    if (!packagePath) {
+    const packageJSONPath = packagePath ?? findConfigFile(projectPath, 'package.json');
+    if (!packageJSONPath) {
       return settings;
     }
 
-    const rootPkgJson = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+    const rootPkgJson = JSON.parse(fs.readFileSync(packageJSONPath, 'utf-8'));
     const dependencies = rootPkgJson.dependencies || {};
     const devDependencies = rootPkgJson.devDependencies || {};
 
@@ -99,7 +99,7 @@ export function getTagProviderSettings(workspacePath: string | null | undefined)
       dependencies['quasar-framework'] = '^0.0.17';
     }
     if (dependencies['nuxt'] || dependencies['nuxt-edge'] || devDependencies['nuxt'] || devDependencies['nuxt-edge']) {
-      const nuxtTagProvider = getNuxtTagProvider(workspacePath);
+      const nuxtTagProvider = getNuxtTagProvider(projectPath);
       if (nuxtTagProvider) {
         settings['nuxt'] = true;
         allTagProviders.push(nuxtTagProvider);
@@ -109,13 +109,13 @@ export function getTagProviderSettings(workspacePath: string | null | undefined)
       settings['gridsome'] = true;
     }
 
-    const workspaceTagProvider = getWorkspaceTagProvider(workspacePath, rootPkgJson);
+    const workspaceTagProvider = getWorkspaceTagProvider(projectPath, rootPkgJson);
     if (workspaceTagProvider) {
       allTagProviders.push(workspaceTagProvider);
     }
 
     for (const dep of [...Object.keys(dependencies), ...Object.keys(devDependencies)]) {
-      const runtimePkgJsonPath = findConfigFile(workspacePath, join('node_modules', dep, 'package.json'));
+      const runtimePkgJsonPath = findConfigFile(projectPath, join('node_modules', dep, 'package.json'));
 
       if (!runtimePkgJsonPath) {
         continue;
@@ -126,7 +126,7 @@ export function getTagProviderSettings(workspacePath: string | null | undefined)
         continue;
       }
 
-      const depTagProvider = getDependencyTagProvider(workspacePath, runtimePkgJson);
+      const depTagProvider = getDependencyTagProvider(projectPath, runtimePkgJson);
       if (!depTagProvider) {
         continue;
       }
