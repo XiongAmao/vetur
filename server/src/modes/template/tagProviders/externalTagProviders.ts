@@ -25,12 +25,12 @@ export const gridsomeTagProvider = getExternalTagProvider('gridsome', gridsomeTa
 /**
  * Get tag providers specified in workspace root's packaage.json
  */
-export function getWorkspaceTagProvider(workspacePath: string, rootPkgJson: any): IHTMLTagProvider | null {
+export function getWorkspaceTagProvider(packageRoot: string, rootPkgJson: any): IHTMLTagProvider | null {
   if (!rootPkgJson.vetur) {
     return null;
   }
-  const tagsPath = findConfigFile(workspacePath, rootPkgJson.vetur.tags);
-  const attrsPath = findConfigFile(workspacePath, rootPkgJson.vetur.attributes);
+  const tagsPath = findConfigFile(packageRoot, rootPkgJson.vetur.tags);
+  const attrsPath = findConfigFile(packageRoot, rootPkgJson.vetur.attributes);
 
   try {
     if (tagsPath && attrsPath) {
@@ -47,14 +47,14 @@ export function getWorkspaceTagProvider(workspacePath: string, rootPkgJson: any)
 /**
  * Get tag providers specified in packaage.json's `vetur` key
  */
-export function getDependencyTagProvider(workspacePath: string, depPkgJson: any): IHTMLTagProvider | null {
+export function getDependencyTagProvider(packageRoot: string, depPkgJson: any): IHTMLTagProvider | null {
   if (!depPkgJson.vetur) {
     return null;
   }
 
-  const tagsPath = findConfigFile(workspacePath, path.join('node_modules/', depPkgJson.name, depPkgJson.vetur.tags));
+  const tagsPath = findConfigFile(packageRoot, path.join('node_modules/', depPkgJson.name, depPkgJson.vetur.tags));
   const attrsPath = findConfigFile(
-    workspacePath,
+    packageRoot,
     path.join('node_modules/', depPkgJson.name, depPkgJson.vetur.attributes)
   );
 

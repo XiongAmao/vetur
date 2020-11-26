@@ -16,6 +16,7 @@ import fs from 'fs';
 import { join } from 'path';
 import { getNuxtTagProvider } from './nuxtTags';
 import { findConfigFile } from '../../../utils/workspace';
+import { normalizeFileNameResolve } from '../../../utils/paths';
 
 export let allTagProviders: IHTMLTagProvider[] = [
   getHTML5TagProvider(),
@@ -47,16 +48,14 @@ export function getTagProviderSettings(projectPath: string | null | undefined, p
     nuxt: false,
     gridsome: false
   };
-  if (!projectPath) {
-    return settings;
-  }
   try {
-    const packageJSONPath = packagePath ?? findConfigFile(projectPath, 'package.json');
-    if (!packageJSONPath) {
+    if (!packagePath) {
       return settings;
     }
 
-    const rootPkgJson = JSON.parse(fs.readFileSync(packageJSONPath, 'utf-8'));
+    const packageRoot = normalizeFileNameResolve(packagePath, '../');
+
+    const rootPkgJson = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
     const dependencies = rootPkgJson.dependencies || {};
     const devDependencies = rootPkgJson.devDependencies || {};
 
@@ -99,7 +98,7 @@ export function getTagProviderSettings(projectPath: string | null | undefined, p
       dependencies['quasar-framework'] = '^0.0.17';
     }
     if (dependencies['nuxt'] || dependencies['nuxt-edge'] || devDependencies['nuxt'] || devDependencies['nuxt-edge']) {
-      const nuxtTagProvider = getNuxtTagProvider(projectPath);
+      const nuxtTagProvider = getNuxtTagProvider(packageRoot);
       if (nuxtTagProvider) {
         settings['nuxt'] = true;
         allTagProviders.push(nuxtTagProvider);
@@ -109,13 +108,13 @@ export function getTagProviderSettings(projectPath: string | null | undefined, p
       settings['gridsome'] = true;
     }
 
-    const workspaceTagProvider = getWorkspaceTagProvider(projectPath, rootPkgJson);
+    const workspaceTagProvider = getWorkspaceTagProvider(packageRoot, rootPkgJson);
     if (workspaceTagProvider) {
       allTagProviders.push(workspaceTagProvider);
     }
 
     for (const dep of [...Object.keys(dependencies), ...Object.keys(devDependencies)]) {
-      const runtimePkgJsonPath = findConfigFile(projectPath, join('node_modules', dep, 'package.json'));
+      const runtimePkgJsonPath = findConfigFile(packageRoot, join('node_modules', dep, 'package.json'));
 
       if (!runtimePkgJsonPath) {
         continue;
@@ -126,7 +125,7 @@ export function getTagProviderSettings(projectPath: string | null | undefined, p
         continue;
       }
 
-      const depTagProvider = getDependencyTagProvider(projectPath, runtimePkgJson);
+      const depTagProvider = getDependencyTagProvider(packageRoot, runtimePkgJson);
       if (!depTagProvider) {
         continue;
       }
